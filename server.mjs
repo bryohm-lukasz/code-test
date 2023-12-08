@@ -10,6 +10,14 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.url === '/cow.obj') {
+    fs.readFile('cow.obj', (err, data) => {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end(data);
+    });
+    return;
+  }
+
   if (req.url === '/triangle.obj') {
     fs.readFile('triangle.obj', (err, data) => {
       res.writeHead(200, { 'Content-Type': 'text/plain' });

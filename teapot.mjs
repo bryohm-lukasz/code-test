@@ -7,11 +7,12 @@
  */
 async function loadTeapotGeometry() {
   // Fetch the teapot obj file
-  const teapotResponse = await fetch('/teapot.obj');
+  const teapotResponse = await fetch('/cow.obj');
   const teapotText = await teapotResponse.text();
 
   const vertices = [];
   const indexes = [];
+  const normals = [];
 
   // Parse the obj file line by line
   for (const line of teapotText.split('\n')) {
@@ -26,12 +27,16 @@ async function loadTeapotGeometry() {
         return parseInt(vertexData.split('/')[0] - 1);
       });
       indexes.push(...faceIndices);
+    } else if (type === 'vn') {
+      const normal = parts.slice(1).map(parseFloat);
+      normals.push(normal);
     }
   }
 
   return {
     indexes: new Uint16Array(indexes),
     vertices: new Float32Array(vertices.flat()),
+    normals: new Float32Array(normals.flat()),
   };
 }
 
@@ -47,23 +52,35 @@ function setupShaderProgram(context) {
   context.shaderSource(
     vertexShader,
     `
-    attribute vec3 position;
-    uniform mat4 modelViewMatrix;
-    void main() {
-      gl_Position = modelViewMatrix * vec4(position, 1);
-    }
-  `
-  );
-  context.shaderSource(
-    fragmentShader,
-    `
-    precision mediump float;
-    void main() {
-      gl_FragColor = vec4(1, 0, 0, 1);
-    }
+attribute vec3 position;
+attribute vec3 normal;
+uniform mat4 modelViewMatrix;
+varying vec3 fragNormal;
+
+void main() {
+  gl_Position = modelViewMatrix * vec4(position, 1);
+  fragNormal = normalize((modelViewMatrix * vec4(normal, 0)).xyz);
+}
   `
   );
 
+  console.log(context.getError());
+  context.shaderSource(
+    fragmentShader,
+    `
+precision mediump float;
+
+varying vec3 fragNormal;
+
+void main() {
+  vec3 lightDirection = normalize(vec3(1.0, 1.0, 1.0));
+  float intensity = max(dot(fragNormal, lightDirection), 0.0);
+
+  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0) * intensity;
+}
+
+  `
+  );
   context.compileShader(vertexShader);
   context.compileShader(fragmentShader);
 
@@ -109,6 +126,15 @@ async function renderTeapot() {
   const renderLoop = () => {
     const delta = performance.now() - firstFrame;
 
+    const normal = context.createBuffer();
+    context.bindBuffer(context.ARRAY_BUFFER, normal);
+    context.bufferData(context.ARRAY_BUFFER, teapotGeometry.normals, context.STATIC_DRAW);
+
+    // Bind normal to shader attribute
+    const normalLocation = context.getAttribLocation(program, 'normal');
+    context.enableVertexAttribArray(normalLocation);
+    context.vertexAttribPointer(normalLocation, 3, context.FLOAT, false, 0, 0);
+
     // Set a rotating model view matrix
     const modelViewMatrixLocation = context.getUniformLocation(program, 'modelViewMatrix');
     const rotation = rotationAngle;
@@ -136,8 +162,10 @@ async function renderTeapot() {
       ])
     );
 
+    console.log(teapotGeometry.indexes.length);
+
     // Render the teapot
-    context.drawElements(context.TRIANGLES, teapotGeometry.indexes.length, context.UNSIGNED_SHORT, 0);
+    context.drawElements(context.TRIANGLES, 17412, context.UNSIGNED_SHORT, 0);
     context.flush();
 
     // Request another frame
