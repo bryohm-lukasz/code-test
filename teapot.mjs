@@ -54,8 +54,10 @@ function setupShaderProgram(context) {
     `
     attribute vec3 position;
     uniform mat4 modelViewMatrix;
+    uniform mat4 perspectiveMatrix;
+
     void main() {
-      gl_Position = modelViewMatrix * vec4(position, 1);
+      gl_Position = perspectiveMatrix * modelViewMatrix * vec4(position, 1);
     }
   `
   );
@@ -114,6 +116,8 @@ async function renderTeapot() {
     const modelViewMatrixLocation = context.getUniformLocation(program, 'modelViewMatrix');
     const rotation = rotationAngle;
     const scale = 0.3;
+    const translationZ = -5; // Increase this value to move the camera farther from the model
+
     context.uniformMatrix4fv(
       modelViewMatrixLocation,
       false,
@@ -132,10 +136,19 @@ async function renderTeapot() {
         0,
         0,
         0,
-        0,
+        translationZ,
         1,
       ])
     );
+
+    // Set the perspective projection matrix
+    const fov = Math.PI / 4;
+    const aspect = canvas.clientWidth / canvas.clientHeight;
+    const near = 1;
+    const far = 100;
+    let projectionMatrix = perspectiveProjection(fov, aspect, near, far);
+    const perspectiveMatrixLocation = context.getUniformLocation(program, 'perspectiveMatrix');
+    context.uniformMatrix4fv(perspectiveMatrixLocation, false, new Float32Array(projectionMatrix));
 
     // Render the teapot
     context.drawElements(context.TRIANGLES, teapotGeometry.indexes.length, context.UNSIGNED_SHORT, 0);
