@@ -7,19 +7,34 @@
  */
 async function loadTeapotGeometry() {
   // Fetch the teapot obj file
-  const teapotResponse = await fetch('/teapot.obj');
+  const teapotResponse = await fetch('/triangle.obj');
   const teapotText = await teapotResponse.text();
+
+  const vertices = [];
+  const indexes = [];
 
   // Parse the obj file line by line
   for (const line of teapotText.split('\n')) {
-    // TODO: Parse the glb line by line
+    const parts = line.trim().split(' ');
+    const type = parts[0];
+
+    if (type === 'v') {
+      const vertex = parts.slice(1).map(parseFloat);
+      vertices.push(vertex);
+    } else if (type === 'f') {
+      const faceIndices = parts.slice(1).map((vertexData) => {
+        return parseInt(vertexData.split('/')[0] - 1);
+      });
+      indexes.push(...faceIndices);
+    }
   }
 
-  // Return indices and vertices of the teapot
-  // TODO: Right now this returns a triangle
+  console.log(indexes);
+  console.log(vertices.flat());
+
   return {
-    indexes: new Uint16Array([0, 1, 2]),
-    vertices: new Float32Array([-1, -1, 0, 0, 1, 0, 1, -1, 0]),
+    indexes: new Uint16Array(indexes),
+    vertices: new Float32Array(vertices.flat()),
   };
 }
 
