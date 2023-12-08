@@ -115,21 +115,22 @@ async function renderTeapot() {
     // Set a rotating model view matrix
     const modelViewMatrixLocation = context.getUniformLocation(program, 'modelViewMatrix');
     const rotation = ((delta % 10000) / 10000) * Math.PI * 2;
+    const scale = 0.3;
     context.uniformMatrix4fv(
       modelViewMatrixLocation,
       false,
       new Float32Array([
-        Math.cos(rotation),
+        scale * Math.cos(rotation),
         0,
-        Math.sin(rotation),
-        0,
-        0,
-        1,
+        scale * Math.sin(rotation),
         0,
         0,
-        -Math.sin(rotation),
+        scale,
         0,
-        Math.cos(rotation),
+        0,
+        -scale * Math.sin(rotation),
+        0,
+        scale * Math.cos(rotation),
         0,
         0,
         0,
