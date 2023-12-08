@@ -109,11 +109,7 @@ async function renderTeapot() {
   context.enableVertexAttribArray(positionLocation);
   context.vertexAttribPointer(positionLocation, 3, context.FLOAT, false, 0, 0);
 
-  let firstFrame = performance.now();
-
   const renderLoop = () => {
-    const delta = performance.now() - firstFrame;
-
     // Set a rotating model view matrix
     const modelViewMatrixLocation = context.getUniformLocation(program, 'modelViewMatrix');
     const rotation = rotationAngle;
