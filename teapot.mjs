@@ -7,7 +7,7 @@
  */
 async function loadTeapotGeometry() {
   // Fetch the teapot obj file
-  const teapotResponse = await fetch('/triangle.obj');
+  const teapotResponse = await fetch('/teapot.obj');
   const teapotText = await teapotResponse.text();
 
   const vertices = [];
@@ -139,7 +139,7 @@ async function renderTeapot() {
     );
 
     // Render the teapot
-    context.drawElements(context.TRIANGLES, 3, context.UNSIGNED_SHORT, 0);
+    context.drawElements(context.TRIANGLES, teapotGeometry.indexes.length, context.UNSIGNED_SHORT, 0);
     context.flush();
 
     // Request another frame
