@@ -29,9 +29,6 @@ async function loadTeapotGeometry() {
     }
   }
 
-  console.log(indexes);
-  console.log(vertices.flat());
-
   return {
     indexes: new Uint16Array(indexes),
     vertices: new Float32Array(vertices.flat()),
@@ -114,7 +111,7 @@ async function renderTeapot() {
 
     // Set a rotating model view matrix
     const modelViewMatrixLocation = context.getUniformLocation(program, 'modelViewMatrix');
-    const rotation = ((delta % 10000) / 10000) * Math.PI * 2;
+    const rotation = rotationAngle;
     const scale = 0.3;
     context.uniformMatrix4fv(
       modelViewMatrixLocation,
@@ -150,5 +147,19 @@ async function renderTeapot() {
   // Start the render loop
   requestAnimationFrame(renderLoop);
 }
+
+let rotationAngle = 0;
+document.addEventListener('keydown', (event) => {
+  const rotationSpeed = 0.19;
+
+  switch (event.key) {
+    case 'ArrowLeft':
+      rotationAngle -= rotationSpeed;
+      break;
+    case 'ArrowRight':
+      rotationAngle += rotationSpeed;
+      break;
+  }
+});
 
 renderTeapot();
