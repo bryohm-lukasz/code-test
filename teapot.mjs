@@ -12,6 +12,7 @@ async function loadTeapotGeometry() {
 
   const vertices = [];
   const indexes = [];
+  const normals = [];
 
   // Parse the obj file line by line
   for (const line of teapotText.split('\n')) {
@@ -26,12 +27,16 @@ async function loadTeapotGeometry() {
         return parseInt(vertexData.split('/')[0] - 1);
       });
       indexes.push(...faceIndices);
+    } else if (type === 'vn') {
+      const normal = parts.slice(1).map(parseFloat);
+      normals.push(normal);
     }
   }
 
   return {
     indexes: new Uint16Array(indexes),
     vertices: new Float32Array(vertices.flat()),
+    normals: new Float32Array(normals.flat()),
   };
 }
 
