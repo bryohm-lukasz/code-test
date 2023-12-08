@@ -3,7 +3,7 @@
 
 /**
  * Loads the teapot geometry.
- * @returns {Promise<{indexes: Uint16Array, vertices: Float32Array}>}
+ * @returns {Promise<{indexes: Uint16Array, vertices: Float32Array, normals: Floar32Array∂}>}
  */
 async function loadTeapotGeometry() {
   // Fetch the teapot obj file
