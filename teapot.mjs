@@ -163,4 +163,37 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
+/**
+ * Constructs a perspective projection matrix.
+ * @param {number} fov - The field of view angle in radians.
+ * @param {number} aspect - The aspect ratio (width / height).
+ * @param {number} near - The near clipping plane distance.
+ * @param {number} far - The far clipping plane distance.
+ * @returns {number[]} - The perspective projection matrix.
+ */
+function perspectiveProjection(fov, aspect, near, far) {
+  const f = 1.0 / Math.tan(fov / 2.0);
+
+  const projectionMatrix = [
+    f / aspect,
+    0,
+    0,
+    0,
+    0,
+    f,
+    0,
+    0,
+    0,
+    0,
+    (far + near) / (near - far),
+    -1,
+    0,
+    0,
+    (2 * far * near) / (near - far),
+    0,
+  ];
+
+  return projectionMatrix;
+}
+
 renderTeapot();
