@@ -53,11 +53,15 @@ function setupShaderProgram(context) {
     vertexShader,
     `
     attribute vec3 position;
+    attribute vec3 normal;
     uniform mat4 modelViewMatrix;
     uniform mat4 perspectiveMatrix;
 
+    varying vec3 fragNormal;
+
     void main() {
       gl_Position = perspectiveMatrix * modelViewMatrix * vec4(position, 1);
+      fragNormal = (perspectiveMatrix * modelViewMatrix * vec4(normal, 0.0)).xyz;
     }
   `
   );
@@ -65,8 +69,15 @@ function setupShaderProgram(context) {
     fragmentShader,
     `
     precision mediump float;
+    varying vec3 fragNormal;
+
     void main() {
-      gl_FragColor = vec4(1, 0, 0, 1);
+      vec3 lightDirection = normalize(vec3(0.5, 0.5, 1.0)); // Define light direction
+      float brightness = max(dot(normalize(fragNormal), lightDirection), 0.0); // Calculate brightness based on dot product
+
+      vec3 color = vec3(1.0, 0.0, 0.0); // Red color
+
+      gl_FragColor = vec4(color * brightness, 1.0); // Apply color based on brightness
     }
   `
   );
@@ -102,9 +113,21 @@ async function renderTeapot() {
   context.bindBuffer(context.ARRAY_BUFFER, position);
   context.bufferData(context.ARRAY_BUFFER, teapotGeometry.vertices, context.STATIC_DRAW);
 
+  /* weird stuff happens when I uncomment it-> teapot turns into a sphere
+    enhancement #1 should be considered WIP */
+
+  // const normal = context.createBuffer();
+  // context.bindBuffer(context.ARRAY_BUFFER, normal);
+  // context.bufferData(context.ARRAY_BUFFER, teapotGeometry.normals, context.STATIC_DRAW);
+
   // Use the red shader program
   const program = setupShaderProgram(context);
   context.useProgram(program);
+
+  // Bind normal attribute to shader program
+  const normalLocation = context.getAttribLocation(program, 'normal');
+  context.enableVertexAttribArray(normalLocation);
+  context.vertexAttribPointer(normalLocation, 3, context.FLOAT, false, 0, 0);
 
   // Bind position to it shader attribute
   const positionLocation = context.getAttribLocation(program, 'position');
