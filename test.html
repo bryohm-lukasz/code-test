@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>OBJ to WebGL</title>
+  <style>
+    body {
+      margin: 0;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="webgl-canvas"></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/gl-matrix@2.8.1/dist/gl-matrix.js"></script>
+
+  <script>
+    window.onload = function () {
+      const canvas = document.getElementById('webgl-canvas');
+      const gl = canvas.getContext('webgl');
+
+      function compileShader(gl, shaderSource, shaderType) {
+        const shader = gl.createShader(shaderType);
+        gl.shaderSource(shader, shaderSource);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
+          gl.deleteShader(shader);
+          return null;
+        }
+        return shader;
+      }
+
+      // Vertex shader source
+      const vertexShaderSource = `
+        attribute vec3 aVertexPosition;
+        uniform mat4 uModelViewMatrix;
+        uniform mat4 uProjectionMatrix;
+
+        void main(void) {
+          gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+        }
+      `;
+
+      // Fragment shader source
+      const fragmentShaderSource = `
+        precision mediump float;
+        uniform vec3 uBaseColor;
+
+        void main(void) {
+          gl_FragColor = vec4(uBaseColor, 1.0);
+        }
+      `;
+
+      // Compile shaders
+      const vertexShader = compileShader(gl, vertexShaderSource, gl.VERTEX_SHADER);
+      const fragmentShader = compileShader(gl, fragmentShaderSource, gl.FRAGMENT_SHADER);
+
+      // Check if shaders compiled successfully
+      if (!vertexShader || !fragmentShader) {
+        console.error('Failed to compile shaders');
+        return;
+      }
+
+      // Create and link shader program
+      const shaderProgram = gl.createProgram();
+      gl.attachShader(shaderProgram, vertexShader);
+      gl.attachShader(shaderProgram, fragmentShader);
+      gl.linkProgram(shaderProgram);
+      gl.useProgram(shaderProgram);
+
+      // Load and parse OBJ file (simplified)
+      fetch('http://localhost:5033/teapot.obj')
+        .then(response => response.text())
+        .then(objData => {
+          const positions = [];
+          const indices = [];
+
+          objData.split('\n').forEach(line => {
+            const parts = line.trim().split(' ');
+
+            if (parts[0] === 'v') {
+              positions.push(
+                parseFloat(parts[1]) * 0.2,   // Scale x
+                parseFloat(parts[2]) * 0.2,   // Scale y
+                parseFloat(parts[3]) * 0.2    // Scale z
+              );
+            } else if (parts[0] === 'f') {
+              for (let i = 1; i < parts.length; i++) {
+                const vertexData = parts[i].split('/');
+                indices.push(parseInt(vertexData[0]) - 1);
+              }
+            }
+          });
+
+          const vertexBuffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+          gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+          const indexBuffer = gl.createBuffer();
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+          gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+          const vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
+          gl.enableVertexAttribArray(vertexPositionAttribute);
+          gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+
+          // Define your model-view matrix (for transforming from object space to view space)
+          const modelViewMatrix = mat4.create(); // Create an identity matrix initially
+
+          // Define your view matrix (for positioning and orienting the "camera")
+          const eye = [0, 0, 5]; // Camera position
+          const center = [0, 0, 0]; // Target the camera is looking at
+          const up = [0, 1, 0]; // Up direction of the camera
+
+          mat4.lookAt(modelViewMatrix, eye, center, up);
+
+          // Define your projection matrix (for transforming to clip space)
+          const projectionMatrix = mat4.create(); // Create an identity matrix initially
+
+          const aspectRatio = canvas.width / canvas.height; // Assuming canvas is your WebGL canvas
+          const fieldOfView = Math.PI / 4; // 45 degrees
+          const near = 0.1;
+          const far = 100;
+
+          mat4.perspective(projectionMatrix, fieldOfView, aspectRatio, near, far);
+
+          // Pass these matrices as uniforms to your shaders as described in the previous example
+          // Set the uniform values for the matrices
+          const uModelViewMatrix = gl.getUniformLocation(shaderProgram, 'uModelViewMatrix');
+          const uProjectionMatrix = gl.getUniformLocation(shaderProgram, 'uProjectionMatrix');
+
+          gl.uniformMatrix4fv(uModelViewMatrix, false, modelViewMatrix);
+          gl.uniformMatrix4fv(uProjectionMatrix, false, projectionMatrix);
+
+          const baseColor = [1.0, 0.0, 0.0]; // Example initial color (red)
+          gl.uniform3fv(gl.getUniformLocation(shaderProgram, 'uBaseColor'), baseColor);
+
+          gl.clearColor(0.5, 0.5, 0.5, 1.0);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+        })
+        .catch(error => console.error('Error fetching OBJ file:', error));
+    };
+  </script>
+</body>
+
+</html>
