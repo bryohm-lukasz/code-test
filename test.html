@@ -98,15 +98,15 @@
 
             if (parts[0] === 'v') {
               positions.push(
-                parseFloat(parts[1]) * 0.2,
-                parseFloat(parts[2]) * 0.2,
-                parseFloat(parts[3]) * 0.2
+                parseFloat(parts[1]),
+                parseFloat(parts[2]),
+                parseFloat(parts[3])
               );
             } else if (parts[0] === 'vn') {
               normals.push(
-                parseFloat(parts[1]) * 0.2,
-                parseFloat(parts[2]) * 0.2,
-                parseFloat(parts[3]) * 0.2
+                parseFloat(parts[1]),
+                parseFloat(parts[2]),
+                parseFloat(parts[3])
               );
             } else if (parts[0] === 'f') {
               for (let i = 1; i < parts.length; i++) {

@@ -56,12 +56,11 @@ function setupShaderProgram(context) {
     attribute vec3 normal;
     uniform mat4 modelViewMatrix;
     uniform mat4 perspectiveMatrix;
-
     varying vec3 fragNormal;
 
     void main() {
-      gl_Position = perspectiveMatrix * modelViewMatrix * vec4(position, 1);
-      fragNormal = (perspectiveMatrix * modelViewMatrix * vec4(normal, 0.0)).xyz;
+      gl_Position = perspectiveMatrix * modelViewMatrix * vec4(position, 1.0);
+      fragNormal = normal;
     }
   `
   );
@@ -70,14 +69,15 @@ function setupShaderProgram(context) {
     `
     precision mediump float;
     varying vec3 fragNormal;
+    uniform vec3 uBaseColor;
 
     void main() {
-      vec3 lightDirection = normalize(vec3(0.5, 0.5, 1.0)); // Define light direction
-      float brightness = max(dot(normalize(fragNormal), lightDirection), 0.0); // Calculate brightness based on dot product
+          vec3 normal = normalize(fragNormal);
+          vec3 lightDirection = normalize(vec3(0.0, 0.0, 1.0));
+          float intensity = max(dot(normal, lightDirection), 0.0);
+          vec3 finalColor = uBaseColor * intensity;
 
-      vec3 color = vec3(1.0, 0.0, 0.0); // Red color
-
-      gl_FragColor = vec4(color * brightness, 1.0); // Apply color based on brightness
+          gl_FragColor = vec4(finalColor, 1.0);
     }
   `
   );
@@ -113,12 +113,9 @@ async function renderTeapot() {
   context.bindBuffer(context.ARRAY_BUFFER, position);
   context.bufferData(context.ARRAY_BUFFER, teapotGeometry.vertices, context.STATIC_DRAW);
 
-  /* weird stuff happens when I uncomment it-> teapot turns into a sphere
-    enhancement #1 should be considered WIP */
-
-  // const normal = context.createBuffer();
-  // context.bindBuffer(context.ARRAY_BUFFER, normal);
-  // context.bufferData(context.ARRAY_BUFFER, teapotGeometry.normals, context.STATIC_DRAW);
+  const normal = context.createBuffer();
+  context.bindBuffer(context.ARRAY_BUFFER, normal);
+  context.bufferData(context.ARRAY_BUFFER, teapotGeometry.normals, context.STATIC_DRAW);
 
   // Use the red shader program
   const program = setupShaderProgram(context);
@@ -132,15 +129,14 @@ async function renderTeapot() {
   // Bind position to it shader attribute
   const positionLocation = context.getAttribLocation(program, 'position');
   context.enableVertexAttribArray(positionLocation);
+  context.bindBuffer(context.ARRAY_BUFFER, position);
   context.vertexAttribPointer(positionLocation, 3, context.FLOAT, false, 0, 0);
 
   const renderLoop = () => {
-    // Set a rotating model view matrix
     const modelViewMatrixLocation = context.getUniformLocation(program, 'modelViewMatrix');
     const rotation = rotationAngle;
     const scale = 0.3;
-    const translationZ = -5; // Increase this value to move the camera farther from the model
-
+    const translationZ = -5;
     context.uniformMatrix4fv(
       modelViewMatrixLocation,
       false,
@@ -173,7 +169,9 @@ async function renderTeapot() {
     const perspectiveMatrixLocation = context.getUniformLocation(program, 'perspectiveMatrix');
     context.uniformMatrix4fv(perspectiveMatrixLocation, false, new Float32Array(projectionMatrix));
 
-    // Render the teapot
+    const baseColor = [1.0, 0.0, 0.0];
+    context.uniform3fv(context.getUniformLocation(program, 'uBaseColor'), baseColor);
+
     context.drawElements(context.TRIANGLES, teapotGeometry.indexes.length, context.UNSIGNED_SHORT, 0);
     context.flush();
 
