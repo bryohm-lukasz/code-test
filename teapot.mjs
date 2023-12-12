@@ -62,7 +62,7 @@ function setupShaderProgram(context) {
     void main() {
       gl_Position = perspectiveMatrix * modelViewMatrix * vec4(position, 1);
       fragNormal = (perspectiveMatrix * modelViewMatrix * vec4(normal, 0.0)).xyz;
-    }
+     }
   `
   );
   context.shaderSource(
@@ -113,12 +113,15 @@ async function renderTeapot() {
   context.bindBuffer(context.ARRAY_BUFFER, position);
   context.bufferData(context.ARRAY_BUFFER, teapotGeometry.vertices, context.STATIC_DRAW);
 
+  /*
+  Following 3 lines were commented out, because I missed line 136. I sent the task on Friday, but I tried to fix it on Tuesday (took me additional 2 hours),
+  Figured it's worth mentioning :) */
+
   /* weird stuff happens when I uncomment it-> teapot turns into a sphere
     enhancement #1 should be considered WIP */
-
-  // const normal = context.createBuffer();
-  // context.bindBuffer(context.ARRAY_BUFFER, normal);
-  // context.bufferData(context.ARRAY_BUFFER, teapotGeometry.normals, context.STATIC_DRAW);
+  const normal = context.createBuffer();
+  context.bindBuffer(context.ARRAY_BUFFER, normal);
+  context.bufferData(context.ARRAY_BUFFER, teapotGeometry.normals, context.STATIC_DRAW);
 
   // Use the red shader program
   const program = setupShaderProgram(context);
@@ -132,6 +135,9 @@ async function renderTeapot() {
   // Bind position to it shader attribute
   const positionLocation = context.getAttribLocation(program, 'position');
   context.enableVertexAttribArray(positionLocation);
+
+  // this line was missing
+  context.bindBuffer(context.ARRAY_BUFFER, position);
   context.vertexAttribPointer(positionLocation, 3, context.FLOAT, false, 0, 0);
 
   const renderLoop = () => {
