@@ -40,21 +40,31 @@
       // Vertex shader source
       const vertexShaderSource = `
         attribute vec3 aVertexPosition;
+        attribute vec3 aVertexNormal;
         uniform mat4 uModelViewMatrix;
         uniform mat4 uProjectionMatrix;
+        varying vec3 vNormal;
 
         void main(void) {
           gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
+          vNormal = aVertexNormal;
         }
       `;
 
       // Fragment shader source
       const fragmentShaderSource = `
         precision mediump float;
+        varying vec3 vNormal;
         uniform vec3 uBaseColor;
 
         void main(void) {
-          gl_FragColor = vec4(uBaseColor, 1.0);
+          // Use the normal for shading/coloring calculations (Example: Lambert shading)
+          vec3 normal = normalize(vNormal);
+          vec3 lightDirection = normalize(vec3(0.0, 0.0, 1.0)); // Example light direction
+          float intensity = max(dot(normal, lightDirection), 0.0); // Lambert shading
+          vec3 finalColor = uBaseColor * intensity; // Base color with shading
+
+          gl_FragColor = vec4(finalColor, 1.0);
         }
       `;
 
@@ -81,15 +91,22 @@
         .then(objData => {
           const positions = [];
           const indices = [];
+          const normals = [];
 
           objData.split('\n').forEach(line => {
             const parts = line.trim().split(' ');
 
             if (parts[0] === 'v') {
               positions.push(
-                parseFloat(parts[1]) * 0.2,   // Scale x
-                parseFloat(parts[2]) * 0.2,   // Scale y
-                parseFloat(parts[3]) * 0.2    // Scale z
+                parseFloat(parts[1]) * 0.2,
+                parseFloat(parts[2]) * 0.2,
+                parseFloat(parts[3]) * 0.2
+              );
+            } else if (parts[0] === 'vn') {
+              normals.push(
+                parseFloat(parts[1]) * 0.2,
+                parseFloat(parts[2]) * 0.2,
+                parseFloat(parts[3]) * 0.2
               );
             } else if (parts[0] === 'f') {
               for (let i = 1; i < parts.length; i++) {
@@ -103,13 +120,23 @@
           gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
           gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
+          const normalBuffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+          gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+
           const indexBuffer = gl.createBuffer();
           gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
           gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
           const vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
           gl.enableVertexAttribArray(vertexPositionAttribute);
+          gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
           gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+
+          const normalAttribute = gl.getAttribLocation(shaderProgram, 'aVertexNormal');
+          gl.enableVertexAttribArray(normalAttribute);
+          gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+          gl.vertexAttribPointer(normalAttribute, 3, gl.FLOAT, false, 0, 0);
 
           // Define your model-view matrix (for transforming from object space to view space)
           const modelViewMatrix = mat4.create(); // Create an identity matrix initially
