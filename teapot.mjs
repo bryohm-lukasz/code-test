@@ -114,7 +114,7 @@ async function renderTeapot() {
   context.bufferData(context.ARRAY_BUFFER, teapotGeometry.vertices, context.STATIC_DRAW);
 
   /*
-  Following 3 lines were commented out, because I missed line 136. I sent the task on Friday, but I tried to fix it on Tuesday (took me additional 2 hours),
+  Following 3 lines were commented out, because I missed line 140. I sent the task on Friday, but I tried to fix it on Tuesday (took me additional 2 hours),
   Figured it's worth mentioning :) */
 
   /* weird stuff happens when I uncomment it-> teapot turns into a sphere
